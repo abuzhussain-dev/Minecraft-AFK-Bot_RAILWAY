@@ -1,6 +1,4 @@
-// bot.js — Railway-ready, env vars only, 512MB RAM optimized
-require('v8').setFlagsFromString('--max-old-space-size=384');
-
+// bot.js — Railway-ready, env vars only
 const mineflayer = require('mineflayer');
 
 const config = {
