@@ -1,13 +1,20 @@
-// bot.js — Railway-ready, env vars only
 const mineflayer = require('mineflayer');
+const crypto = require('crypto');
 
 const config = {
-  serverHost: process.env.SERVER_HOST || 'localhost',
-  serverPort: parseInt(process.env.SERVER_PORT || '25565'),
+  serverHost: process.env.SERVER_HOST || 'Ftwar.aternos.me',
+  serverPort: parseInt(process.env.SERVER_PORT || '51549'),
   botUsername: process.env.BOT_USERNAME || 'RailwayAFK',
   botChunk: parseInt(process.env.BOT_CHUNK || '1'),
   mcVersion: process.env.MC_VERSION || false
 };
+
+// Deterministic "random" password derived from username
+function generatePassword(username) {
+  return crypto.createHash('sha256').update(username + '_afk_salt').digest('hex').slice(0, 12);
+}
+
+const password = generatePassword(config.botUsername);
 
 const bot = mineflayer.createBot({
   host: config.serverHost,
@@ -29,9 +36,20 @@ bot.on('login', () => {
 bot.on('spawn', () => {
   console.log(`✅ ${config.botUsername} is Ready!`);
 
+  // Auto-register then auto-login
+  setTimeout(() => {
+    bot.chat(`/register ${password} ${password}`);
+    console.log('📝 Sent /register');
+  }, 1000);
+
+  setTimeout(() => {
+    bot.chat(`/login ${password}`);
+    console.log('🔑 Sent /login');
+  }, 3000);
+
   setTimeout(() => {
     bot.setControlState('sneak', true);
-  }, 3000);
+  }, 5000);
 
   setTimeout(movementCycle, STEP_INTERVAL);
 });
