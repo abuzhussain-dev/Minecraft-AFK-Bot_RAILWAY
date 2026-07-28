@@ -1,24 +1,38 @@
+// bot.js — Railway-ready, env vars only, 512MB RAM optimized
+require('v8').setFlagsFromString('--max-old-space-size=384');
+
 const mineflayer = require('mineflayer');
-const config = require('./config.json');
+
+const config = {
+  serverHost: process.env.SERVER_HOST || 'localhost',
+  serverPort: parseInt(process.env.SERVER_PORT || '25565'),
+  botUsername: process.env.BOT_USERNAME || 'RailwayAFK',
+  botChunk: parseInt(process.env.BOT_CHUNK || '1'),
+  mcVersion: process.env.MC_VERSION || false
+};
 
 const bot = mineflayer.createBot({
   host: config.serverHost,
   port: config.serverPort,
   username: config.botUsername,
   auth: 'offline',
-  version: false,
-  viewDistance: config.botChunk
+  version: config.mcVersion,
+  viewDistance: 'tiny'
 });
 
 let movementPhase = 0;
 const STEP_INTERVAL = 1500;
-const STEP_SPEED    = 1;
 const JUMP_DURATION = 500;
 
+bot.on('login', () => {
+  console.log(`🔌 Logged in as ${bot.username}`);
+});
+
 bot.on('spawn', () => {
+  console.log(`✅ ${config.botUsername} is Ready!`);
+
   setTimeout(() => {
     bot.setControlState('sneak', true);
-    console.log(`✅ ${config.botUsername} is Ready!`);
   }, 3000);
 
   setTimeout(movementCycle, STEP_INTERVAL);
@@ -42,9 +56,7 @@ function movementCycle() {
       bot.setControlState('forward', false);
       bot.setControlState('back', false);
       bot.setControlState('jump', true);
-      setTimeout(() => {
-        bot.setControlState('jump', false);
-      }, JUMP_DURATION);
+      setTimeout(() => bot.setControlState('jump', false), JUMP_DURATION);
       break;
     case 3:
       bot.setControlState('forward', false);
@@ -54,14 +66,20 @@ function movementCycle() {
   }
 
   movementPhase = (movementPhase + 1) % 4;
-
   setTimeout(movementCycle, STEP_INTERVAL);
 }
 
-bot.on('error', (err) => {
-  console.error('⚠️ Error:', err);
+bot.on('kicked', (reason) => {
+  console.log('❌ Kicked:', reason);
+  process.exit(1);
 });
+
+bot.on('error', (err) => {
+  console.error('⚠️ Error:', err.message);
+  process.exit(1);
+});
+
 bot.on('end', () => {
   console.log('⛔️ Bot Disconnected! Exiting for Railway restart...');
-  process.exit(1);  // Railway restarts the container automatically
+  process.exit(1);
 });
